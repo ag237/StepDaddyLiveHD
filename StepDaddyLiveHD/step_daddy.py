@@ -121,5 +121,41 @@ class StepDaddy:
         return data
 
     async def schedule(self):
-        response = await self._session.get(f"{self._base_url}/schedule/schedule-generated.php", headers=self._headers())
-        return response.json()
+        """Fetch schedule data from the external API with proper error handling."""
+        schedule_url = f"{self._base_url}/schedule/schedule-generated.php"
+        
+        try:
+            response = await self._session.get(schedule_url, headers=self._headers())
+            
+            # Debug logging
+            print(f"Schedule request URL: {schedule_url}")
+            print(f"Response status code: {response.status_code}")
+            print(f"Response headers: {dict(response.headers)}")
+            print(f"Response content preview: {response.text[:500]}...")
+            
+            # Handle HTTP errors
+            if response.status_code == 404:
+                print(f"Schedule endpoint not found (404): {schedule_url}")
+                print("Returning empty schedule as fallback")
+                return {}
+            elif response.status_code >= 400:
+                print(f"HTTP error {response.status_code}: {response.text[:200]}")
+                return {}
+            
+            # Check if response is actually JSON
+            content_type = response.headers.get('content-type', '')
+            if 'application/json' not in content_type.lower():
+                print(f"WARNING: Response content-type is '{content_type}', not JSON!")
+                print(f"Full response text: {response.text}")
+                return {}
+            
+            try:
+                return response.json()
+            except json.JSONDecodeError as e:
+                print(f"JSON decode error: {e}")
+                print(f"Response text that failed to parse: {response.text}")
+                return {}
+                
+        except Exception as e:
+            print(f"Exception during schedule fetch: {type(e).__name__}: {e}")
+            return {}

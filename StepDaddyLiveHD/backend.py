@@ -75,7 +75,12 @@ def playlist():
 
 
 async def get_schedule():
-    return await step_daddy.schedule()
+    try:
+        return await step_daddy.schedule()
+    except Exception as e:
+        print(f"Error in get_schedule: {type(e).__name__}: {e}")
+        # Return empty schedule instead of crashing
+        return {}
 
 
 @fastapi_app.get("/logo/{logo}")
